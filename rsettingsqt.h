@@ -9,6 +9,7 @@
 
 #include <QDebug>
 #include <QObject>
+#include <QtQml>
 
 #include <disqt/disqt.h>
 
@@ -31,6 +32,10 @@ public:
     ~RSettingsQT() override {
         delete redis;
     };
+
+    static void registerType(){
+        qmlRegisterType<RSettingsQT>("io.eberlein.rsettingsqt", 1, 0, "RSettings");
+    }
 
     Q_INVOKABLE QString makeKey(const QString& key) const {
         return group + key;
