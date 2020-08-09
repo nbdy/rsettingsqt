@@ -1,0 +1,3 @@
+[submodule "disqt"]
+	path = disqt
+	url = https://github.com/smthnspcl/disqt
