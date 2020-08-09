@@ -23,11 +23,13 @@ enum DataTypeEnum {
 
 class RSettingsQT : public QObject {
     Q_OBJECT
-    Q_PROPERTY(RedisQT redis READ getRedis WRITE setRedis NOTIFY redisChanged)
+    Q_PROPERTY(RedisQT* redis READ getRedis WRITE setRedis NOTIFY redisChanged)
     Q_PROPERTY(QString group READ getGroup WRITE setGroup NOTIFY groupChanged)
 
 public:
-    explicit RSettingsQT(QObject *parent = nullptr){};
+    explicit RSettingsQT(QObject *parent = nullptr){
+
+    };
 
     ~RSettingsQT() override {
         delete redis;
@@ -78,7 +80,7 @@ public:
 
     Q_INVOKABLE RedisQT *getRedis() const {return redis;}
     Q_INVOKABLE void setRedis(RedisQT *redis) {
-        delete redis;
+        delete this->redis;
         this->redis = redis;
         connect(this->redis, &RedisQT::message, this, &RSettingsQT::onSubscriberReceived);
         emit redisChanged();
