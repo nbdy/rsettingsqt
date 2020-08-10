@@ -11,7 +11,7 @@ find_package(Qt5 COMPONENTS Core Qml REQUIRED)
 
 add_library(rsettingsqt SHARED rsettingsqt.h)
 
-set_target_properties(rsettingsqt PROPERTIES PUBLIC_HEADER "disqt.h")
+set_target_properties(rsettingsqt PROPERTIES PUBLIC_HEADER "rsettingsqt.h")
 
 target_link_libraries(rsettingsqt
 
