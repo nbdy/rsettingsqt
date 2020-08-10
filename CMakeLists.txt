@@ -14,7 +14,7 @@ add_library(rsettingsqt SHARED rsettingsqt.h)
 set_target_properties(rsettingsqt PROPERTIES PUBLIC_HEADER "rsettingsqt.h")
 
 target_link_libraries(rsettingsqt
-
+        disqt cpp_redis tacopie
         Qt5::Core Qt5::Qml)
 
 install(TARGETS rsettingsqt

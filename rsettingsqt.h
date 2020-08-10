@@ -28,7 +28,7 @@ class RSettingsQT : public QObject {
 
 public:
     explicit RSettingsQT(QObject *parent = nullptr){
-
+        emit ready();
     };
 
     ~RSettingsQT() override {
@@ -101,6 +101,7 @@ signals:
 
     void redisChanged();
     void groupChanged();
+    void ready();
 
     void onSettingChanged(const QString& key, const QString& value);
 
