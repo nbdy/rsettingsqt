@@ -44,14 +44,13 @@ public:
     }
 
     Q_INVOKABLE void setAsync(const QString& key, const QString& value, int dataType){
-        std::thread t([&](){set(makeKey(key), value, dataType);});
+        std::thread t([&](){set(makeKey(key), value);});
         t.detach();
     };
 
-    Q_INVOKABLE void set(const QString& key, const QString& value, int dataType){
+    Q_INVOKABLE template<typename T> void set(const QString& key, T value){
         QJsonObject t;
         t.insert(key, value);
-        t.insert("dT", dataType);
         redis->set(makeKey(key), QJsonDocument(t).toJson(QJsonDocument::Compact));
         emit setSuccessful(key);
     };
