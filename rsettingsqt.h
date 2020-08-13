@@ -27,7 +27,7 @@ class RSettingsQT : public QObject {
     Q_PROPERTY(QString group READ getGroup WRITE setGroup NOTIFY groupChanged)
 
 public:
-    explicit RSettingsQT(QObject *parent = nullptr){
+    explicit RSettingsQT(QObject *parent = nullptr): QObject(parent){
         emit ready();
     };
 
