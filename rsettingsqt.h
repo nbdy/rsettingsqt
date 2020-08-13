@@ -13,25 +13,15 @@
 
 #include <disqt/disqt.h>
 
-enum DataTypeEnum {
-    String,
-    Double,
-    Integer,
-    Bool,
-    Array
-};
-
 class RSettingsQT : public QObject {
     Q_OBJECT
     Q_PROPERTY(RedisQT* redis READ getRedis WRITE setRedis NOTIFY redisChanged)
     Q_PROPERTY(QString group READ getGroup WRITE setGroup NOTIFY groupChanged)
 
 public:
-    explicit RSettingsQT(QObject *parent = nullptr): QObject(parent){
-        emit ready();
-    };
+    explicit RSettingsQT(QObject *parent = nullptr): QObject(parent){};
 
-    ~RSettingsQT() override {
+    ~RSettingsQT() {
         delete redis;
     };
 
@@ -43,66 +33,46 @@ public:
         return group + key;
     }
 
-    Q_INVOKABLE void setAsync(const QString& key, const QString& value, int dataType){
-        std::thread t([&](){set(makeKey(key), value);});
-        t.detach();
-    };
+    Q_INVOKABLE QJsonValue get(const QString& key) const {
+        return redis->get(key);
+    }
+
+    Q_INVOKABLE void getAsync(const QString& key) const {
+        redis->getAsync(key);
+    }
 
     Q_INVOKABLE template<typename T> void set(const QString& key, T value){
-        QJsonObject t;
-        t.insert(key, value);
-        redis->set(makeKey(key), QJsonDocument(t).toJson(QJsonDocument::Compact));
-        emit setSuccessful(key);
-    };
-
-    Q_INVOKABLE QJsonValue get(const QString& key){
-        QString data = redis->get(makeKey(key));
-        QJsonDocument d = QJsonDocument::fromJson(data.toUtf8());
-        return d[key];
-        /*
-        switch (d["dT"].toInt()) {
-            case DataTypeEnum::String:
-                return v.toString();
-            case DataTypeEnum::Double:
-                return v.toDouble();
-            case DataTypeEnum::Integer:
-                return v.toInt();
-            case DataTypeEnum::Bool:
-                return v.toBool();
-            case DataTypeEnum::Array:
-                return v.toArray();
-            default:
-                return v.toString();
-        }
-        */
+        redis->setAsync(key, value);
     }
 
     Q_INVOKABLE RedisQT *getRedis() const {return redis;}
-    Q_INVOKABLE void setRedis(RedisQT *redis) {
+    Q_INVOKABLE void setRedis(RedisQT *redisQt) {
         delete this->redis;
-        this->redis = redis;
-        connect(this->redis, &RedisQT::message, this, &RSettingsQT::onSubscriberReceived);
+        this->redis = redisQt;
+        this->redis->connect();
+        emit ready();
         emit redisChanged();
     }
 
     Q_INVOKABLE QString getGroup() const {return group;}
-    Q_INVOKABLE void setGroup(QString& group){
-        if(!group.endsWith("/")) group += "/";
+    Q_INVOKABLE void setGroup(QString& grp){
+        if(!grp.endsWith("/")) grp += "/";
         redis->unsubscribe(this->group);
-        this->group = makeKey(group);
+        this->group = makeKey(grp);
         redis->subscribe(this->group);
         emit groupChanged();
     }
 
 signals:
-    void setSuccessful(const QString& key);
-    void getSuccessful(const QString& key, const QString& value);
-
     void redisChanged();
     void groupChanged();
     void ready();
+    void getSuccessful(const QString& key, const QJsonValue& value);
 
     void onSettingChanged(const QString& key, const QString& value);
+
+    void subscriberConnectedChanged(bool value);
+    void clientConnectedChanged(bool value);
 
 private:
     void onSubscriberReceived(const QString& channel, const QString& message){
