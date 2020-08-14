@@ -13,48 +13,96 @@
 
 #include <disqt/disqt.h>
 
+/**
+ * RSettings QT Class
+ * Q_PROPERTY(QString group READ getGroup WRITE setGroup NOTIFY groupChanged)
+ */
 class RSettingsQT : public QObject {
     Q_OBJECT
-    Q_PROPERTY(RedisQT* redis READ getRedis WRITE setRedis NOTIFY redisChanged)
     Q_PROPERTY(QString group READ getGroup WRITE setGroup NOTIFY groupChanged)
 
 public:
-    explicit RSettingsQT(QObject *parent = nullptr): QObject(parent){};
+    /**
+     * creates the RSettingsQT instance with a default RedisQT instance
+     * @param parent QObject
+     */
+    explicit RSettingsQT(QObject *parent = nullptr): QObject(parent), redis(new RedisQT(parent)){
+        _init();
+    };
 
+    /**
+     * creates the RSettingsQT instance with a provided RedisQT instance
+     * we connect to the RedisQT instance if it was not already connected
+     * @param redisQt RedisQT
+     * @param parent QObject
+     */
+    explicit RSettingsQT(RedisQT *redisQt, QObject *parent = nullptr): QObject(parent), redis(redisQt){
+        _init();
+    };
+
+    /**
+     * destructor; unsubscribes and disconnects; then deletes the pointer to the redis instance
+     */
     ~RSettingsQT() {
+        redis->unsubscribe(this->group);
+        redis->disconnect();
         delete redis;
     };
 
+    /**
+     * register the qml type RSettings with uri 'io.eberlein.rsettingsqt' version 1.0
+     */
     static void registerType(){
         qmlRegisterType<RSettingsQT>("io.eberlein.rsettingsqt", 1, 0, "RSettings");
     }
 
+    /**
+     * creates a key based on the current group
+     * @param key QString
+     * @return QString
+     */
     Q_INVOKABLE QString makeKey(const QString& key) const {
         return group + key;
     }
 
+    /**
+     * gets a QJsonValue from the RedisQT instance based on the key
+     * @param key QString
+     * @return QJsonValue
+     */
     Q_INVOKABLE QJsonValue get(const QString& key) const {
-        return redis->get(key);
+        return redis->get(makeKey(key));
     }
 
-    Q_INVOKABLE void getAsync(const QString& key) const {
-        redis->getAsync(key);
-    }
-
+    /**
+     * set value for a key
+     * @tparam T Anything that fits into a QJsonValue
+     * @param key QString
+     * @param value T
+     */
     Q_INVOKABLE template<typename T> void set(const QString& key, T value){
         redis->setAsync(key, value);
     }
 
-    Q_INVOKABLE RedisQT *getRedis() const {return redis;}
-    Q_INVOKABLE void setRedis(RedisQT *redisQt) {
-        delete this->redis;
-        this->redis = redisQt;
-        this->redis->connect();
-        emit ready();
-        emit redisChanged();
+    /**
+     * check if a key exists
+     * @param key QString
+     * @return bool
+     */
+    Q_INVOKABLE bool exists(const QString& key) {
+        return redis->exists(key);
     }
 
+    /**
+     * get the current Group
+     * @return QString
+     */
     Q_INVOKABLE QString getGroup() const {return group;}
+
+    /**
+     * set the current group
+     * @param grp QString
+     */
     Q_INVOKABLE void setGroup(QString& grp){
         if(!grp.endsWith("/")) grp += "/";
         redis->unsubscribe(this->group);
@@ -64,23 +112,17 @@ public:
     }
 
 signals:
-    void redisChanged();
     void groupChanged();
-    void ready();
-    void getSuccessful(const QString& key, const QJsonValue& value);
-
-    void onSettingChanged(const QString& key, const QString& value);
-
-    void subscriberConnectedChanged(bool value);
-    void clientConnectedChanged(bool value);
+    void settingChanged(const QString& key, const QJsonValue& value);
 
 private:
-    void onSubscriberReceived(const QString& channel, const QString& message){
-        qDebug() << "Channel: " << channel << " | received: " << message;
+    void _init(){
+        if(redis->getClientIsConnected()) redis->connect_client();
+        if(redis->getSubscriberIsConnected()) redis->connect_subscriber();
     }
 
     QString group;
-    RedisQT *redis{};
+    RedisQT *redis;
 };
 
 #endif //RSETTINGSQT_RSETTINGSQT_H

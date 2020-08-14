@@ -1,8 +1,7 @@
 ### RSettingsQT
 Redis based Settings for QT
 #### features
-- notify when setting changed
-- async
+- have the same values over all RSettingsQT instance
 #### install / build
 ```shell script
 ./build.sh
@@ -21,23 +20,15 @@ RSettingsQT::registerType(); // register qml type
 ```
 ##### qml
 ```
-import io.eberlein.disqt 1.0
 import io.eberlein.rsettingsqt 1.0
-
-Redis {
-    id: redis
-
-    onClientConnected: {
-        settings.set("volume", 42)
-        var v = settings.get("volume")
-        settings.getAsync("volume")
-    }
-}
 
 RSettings {
     id: settings
-    redis: redis
     group: "audio" // subscribes to this 'key'
+
+    onGroupChanged: {
+        console.log("changed the current group to", group)
+    }
 
     onSettingChanged: {
         console.log(key, value)
