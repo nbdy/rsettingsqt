@@ -113,12 +113,17 @@ public:
 
 signals:
     void groupChanged();
-    void settingChanged(const QString& key, const QJsonValue& value);
+    void getReturned(const QString& key, const QJsonValue& value);
+    void message(const QString& key, const QString& value);
+    void ready();
 
 private:
     void _init(){
         if(redis->getClientIsConnected()) redis->connect_client();
         if(redis->getSubscriberIsConnected()) redis->connect_subscriber();
+        connect(redis, &RedisQT::getReturned, this, &RSettingsQT::getReturned);
+        connect(redis, &RedisQT::message, this, &RSettingsQT::message);
+        emit ready();
     }
 
     QString group;

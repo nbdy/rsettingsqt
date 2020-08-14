@@ -19,27 +19,27 @@ Redis based Settings for QT
 RSettingsQT::registerType(); // register qml type
 ```
 ##### qml
-```
+``` qml
 import io.eberlein.rsettingsqt 1.0
 
 RSettings {
     id: settings
-    group: "audio" // subscribes to this 'key'
+    group: "audio"
+
+    onReady: {
+        console.log("we are connected and ready")
+    }
 
     onGroupChanged: {
         console.log("changed the current group to", group)
     }
 
-    onSettingChanged: {
-        console.log(key, value)
+    onGetReturned: {
+        console.log("get returned:", key, value)
     }
 
-    onSetSuccessful: {
-        console.log("set value for", key)  // will log that value for volume was set
-    }
-
-    onGetSuccessful: {
-        console.log("got value:", value, "for key:", key)  // signal emitted from getAsync, will log key volume and its value
+    onMessage: {
+        console.log("we have a message from:", channel, ">", msg)
     }
 }
 ```
