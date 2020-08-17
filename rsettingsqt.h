@@ -27,9 +27,12 @@ public:
      * @param parent QObject
      */
     explicit RSettingsQT(QObject *parent = nullptr): RedisQT(parent){
-        connect();
-        emit ready();
+        _init();
     };
+
+    explicit RSettingsQT(const QString& group, QObject *parent = nullptr): RedisQT(parent), group(group){
+        _init();
+    }
 
     /**
      * destructor; unsubscribes and disconnects
@@ -40,13 +43,6 @@ public:
     };
 
     /**
-     * register the qml type RSettings with uri 'io.eberlein.rsettingsqt' version 1.0
-     */
-    static void registerType(){
-        qmlRegisterType<RSettingsQT>("io.eberlein.rsettingsqt", 1, 0, "RSettings");
-    }
-
-    /**
      * creates a key based on the current group
      * @param key QString
      * @return QString
@@ -55,12 +51,13 @@ public:
         return group + key;
     }
 
-    Q_INVOKABLE template<typename T> void gset(const QString& key, T value) {
-        set<T>(makeKey(key).toStdString(), mjo(key, value));
+    Q_INVOKABLE template<typename T> void set(const QString& key, T value) {
+        QJsonDocument d = RedisQT::set(makeKey(key).toStdString(), mjo(key, value));
+        RedisQT::publish(group, d.toJson());
     }
 
-    Q_INVOKABLE QJsonValue gget(const QString& key) const {
-        return const_cast<RSettingsQT*>(this)->get(key.toStdString());
+    Q_INVOKABLE QJsonValue get(const QString& key) const {
+        return RedisQT::get(makeKey(key).toStdString());
     }
 
     /**
@@ -78,19 +75,41 @@ public:
     Q_INVOKABLE void setGroup(QString& grp){
         if(!grp.endsWith("/")) grp += "/";
         unsubscribe(this->group);
-        group = makeKey(grp);
+        this->group = grp;
         subscribe(this->group);
         emit groupChanged();
     }
 
+    /**
+     * should be overridden
+     * @return bool
+     */
+    Q_INVOKABLE virtual bool valuesSet(){
+        return false;
+    };
+
+    /**
+     * should be overridden
+     */
+    Q_INVOKABLE virtual void setDefaultValues(){
+
+    };
+
 signals:
     void groupChanged();
-    void getReturned(const QString& key, const QJsonValue& value);
-    void message(const QString& key, const QString& value);
-    void ready();
+
+protected:
+    virtual void pre_init(){};
+
+    QString group;
 
 private:
-    QString group;
+    void _init(){
+        pre_init();
+        connect();
+        setGroup(group);
+        if(getIsConnected() && !valuesSet()) setDefaultValues();
+    }
 };
 
 #endif //RSETTINGSQT_RSETTINGSQT_H
