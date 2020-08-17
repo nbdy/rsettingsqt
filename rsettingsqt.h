@@ -7,11 +7,16 @@
 
 #include <thread>
 
-#include <QDebug>
 #include <QObject>
 #include <QtQml>
 
 #include <disqt/disqt.h>
+
+
+// todo test macro based code generation
+#define SETTING (T, name)                                          \
+    void set_##name(#T value) { set(#name, value); emit #nameChanged(value); }  \
+    T get_##name() { return #name; }
 
 /**
  * RSettings QT Class
@@ -53,7 +58,7 @@ public:
 
     Q_INVOKABLE template<typename T> void set(const QString& key, T value) {
         QJsonDocument d = RedisQT::set(makeKey(key).toStdString(), mjo(key, value));
-        RedisQT::publish(group, d.toJson());
+        RedisQT::publish(group, d.toJson(QJsonDocument::Compact));
     }
 
     Q_INVOKABLE QJsonValue get(const QString& key) const {
@@ -81,34 +86,43 @@ public:
     }
 
     /**
+     * checks if the database keys exist and have a value
      * should be overridden
      * @return bool
      */
-    Q_INVOKABLE virtual bool valuesSet(){
-        return false;
-    };
+    virtual bool valuesSet() = 0;
 
     /**
+     * sets the default database keys and values
      * should be overridden
      */
-    Q_INVOKABLE virtual void setDefaultValues(){
+    virtual void setDefaultValues() = 0;
 
+    /**
+     * sets the class variables by getting the data from the database
+     * should be overridden
+     */
+    virtual void setValues() = 0;
+
+public slots:
+    /**
+     * doing this in a signal, since calling it from the constructor won't work with virtual methods
+     */
+    void readyReceived(){
+        if(!valuesSet()) setDefaultValues();
+        else setValues();
     };
 
 signals:
     void groupChanged();
 
 protected:
-    virtual void pre_init(){};
-
     QString group;
 
 private:
     void _init(){
-        pre_init();
         connect();
         setGroup(group);
-        if(getIsConnected() && !valuesSet()) setDefaultValues();
     }
 };
 
