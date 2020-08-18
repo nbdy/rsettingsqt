@@ -9,14 +9,9 @@
 
 #include <QObject>
 #include <QtQml>
+#include <utility>
 
 #include <disqt/disqt.h>
-
-
-// todo test macro based code generation
-#define SETTING (T, name)                                          \
-    void set_##name(#T value) { set(#name, value); emit #nameChanged(value); }  \
-    T get_##name() { return #name; }
 
 /**
  * RSettings QT Class
@@ -31,18 +26,14 @@ public:
      * creates the RSettingsQT instance
      * @param parent QObject
      */
-    explicit RSettingsQT(QObject *parent = nullptr): RedisQT(parent){
-        _init();
-    };
+    explicit RSettingsQT(QObject *parent = nullptr): RedisQT(parent){};
 
-    explicit RSettingsQT(const QString& group, QObject *parent = nullptr): RedisQT(parent), group(group){
-        _init();
-    }
+    explicit RSettingsQT(QString group, QObject *parent = nullptr): RedisQT(parent), group(std::move(group)){}
 
     /**
      * destructor; unsubscribes and disconnects
      */
-    ~RSettingsQT() {
+    ~RSettingsQT() override {
         unsubscribe(group);
         disconnect();
     };
@@ -62,7 +53,11 @@ public:
     }
 
     Q_INVOKABLE QJsonValue get(const QString& key) const {
-        return RedisQT::get(makeKey(key).toStdString());
+        return RedisQT::get(makeKey(key).toStdString())[key];
+    }
+
+    Q_INVOKABLE bool exists(const QString& key) const {
+        return RedisQT::exists(makeKey(key));
     }
 
     /**
@@ -106,7 +101,7 @@ public:
 
 public slots:
     /**
-     * doing this in a signal, since calling it from the constructor won't work with virtual methods
+     * executes the above functions
      */
     void readyReceived(){
         if(!valuesSet()) setDefaultValues();
@@ -117,13 +112,12 @@ signals:
     void groupChanged();
 
 protected:
-    QString group;
-
-private:
-    void _init(){
+    void init(){
         connect();
         setGroup(group);
     }
+
+    QString group;
 };
 
 #endif //RSETTINGSQT_RSETTINGSQT_H
