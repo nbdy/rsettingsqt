@@ -1,7 +1,8 @@
 ### RSettingsQT
 Redis based Settings for QT
 #### features
-- have the same values over all RSettingsQT instance
+- have the same values over all RSettingsQT instances
+#### [example](https://github.com/smthnspcl/carpi/blob/qml/libs/Settings/Music/MusicSettings.cpp)
 #### install / build
 ```shell script
 ./build.sh
