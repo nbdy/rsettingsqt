@@ -2,14 +2,14 @@
 Redis based Settings for QT
 #### features
 - have the same values over all RSettingsQT instances
-#### [example](https://github.com/smthnspcl/carpi/blob/qml/libs/Settings/Music/MusicSettings.cpp)
+#### [example](https://github.com/nbdy/carpi/blob/qml/libs/Settings/Music/MusicSettings.cpp)
 #### install / build
 ```shell script
 ./build.sh
 ```
 #### dependencies
 - [QT](https://www.qt.io)
-- [disqt](https://github.com/smthnspcl/disqt)
+- [disqt](https://github.com/nbdy/disqt)
     - [cpp_redis](https://github.com/cpp-redis/cpp_redis)
         - [tacopie](https://github.com/cylix/tacopie)
 #### usage
